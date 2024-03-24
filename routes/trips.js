@@ -147,66 +147,141 @@ const sendEmail = async (to, htmlContent) => {
     }
   };
 
-router.put('/addnewuser/:idTrip',(req, res) => {
-    //use checkbody
-    if (!checkBody(req.body, ['email'])) {
-        res.json({ result: false, error: 'Missing or empty fields' });
-        return;
-      }
-    // Check if user already in DB  
-    User.findOne({ email: { $regex: new RegExp(req.body.email, 'i') } }).then(data => {
-        console.log('data findOne : ' + data)
-        if (!data) {
-    //create a new document user with @ et myTripId
+// router.put('/addnewuser/:idTrip',(req, res) => {
+//     //use checkbody
+//     if (!checkBody(req.body, ['email'])) {
+//         res.json({ result: false, error: 'Missing or empty fields' });
+//         return;
+//       }
+//     // Check if user already in DB  
+//     User.findOne({ email: { $regex: new RegExp(req.body.email, 'i') } }).then(data => {
+//         console.log('data findOne : ' + data)
+//         if (!data) {
+//     //create a new document user with @ et myTripId
+//             const newUser = new User({
+//                 username: '',
+//                 email: req.body.email,
+//                 password: '',
+//                 token: uid2(32),        
+//                 userPicture: '/avatar.png',
+//                 myTrips: [req.params.idTrip]
+//             });   
+//     //save the new user in the data base + update member with users member
+//             newUser.save()
+//                 .then(userdata => {
+//                     res.json({ result: true, newUser: userdata });
+//                     return Trip.updateOne(
+//                         { _id : req.params.idTrip },
+//                         { $push: { members: newUser.id } }
+//                     )
+//                 })
+//                 .then(() => {
+//                     return Trip.findOne({ _id : req.params.idTrip })
+//                         .populate('members');
+//                 })
+//                 .then(updatedTrip => {
+//                     const htmlContent = `<p>Bienvenue sur notre plateforme ! Voici le lien pour rejoindre le voyage : http://localhost:3000/confirmation/${newUser.token}`;
+//                     sendEmail(req.body.email, htmlContent)
+//                     console.log(updatedTrip);
+
+//                 })
+                
+//                 .catch(err => {
+//                     console.error(err);
+//                     res.json({ result: false, error: 'An error occurred' });
+//                 });
+                
+                
+//         } else {
+//     // User already exists in database & doesn't already exist inTrip
+//             if(!data.myTrips.some((e) => e.id === req.params.idTrip)) {
+//                 console.log(data.token)
+//                 const htmlContent = `<p>Bienvenue sur notre plateforme ! Voici le lien pour rejoindre le voyage : http://localhost:3000/confirmation/${data.token}/${req.params.idTrip}/`;
+//                 sendEmail(req.body.email, htmlContent)  
+//                 res.json({ result: true, Msg: 'User already exists, mail was send' });
+//             } else {
+//                 res.json({ result: false, Msg: 'User already exists & it\s already includes in trips' }); 
+//             }
+//         }
+//       });
+// })
+
+// ROUTE CONFIRMATION ALDREADY IN DDB
+
+router.put('/addnewuser/:idTrip', async (req, res) => {
+    try {
+        // Vérifiez les champs requis dans le corps de la demande
+        if (!checkBody(req.body, ['email'])) {
+            res.json({ result: false, error: 'Missing or empty fields' });
+            return;
+        }
+
+        // Récupérez les dates de départ et de retour du voyage auquel vous invitez l'utilisateur
+        const trip = await Trip.findById(req.params.idTrip);
+        if (!trip) {
+            res.json({ result: false, error: 'Trip not found' });
+            return;
+        }
+
+        const newTripDepartureDate = new Date(trip.dates.departure);
+        const newTripReturnDate = new Date(trip.dates.return);
+
+        // Recherchez l'utilisateur dans la base de données
+        const user = await User.findOne({ email: { $regex: new RegExp(req.body.email, 'i') } }).populate('myTrips');
+        if (!user) {
+            // Créez un nouvel utilisateur s'il n'existe pas déjà
             const newUser = new User({
                 username: '',
                 email: req.body.email,
                 password: '',
-                token: uid2(32),        
+                token: uid2(32),
                 userPicture: '/avatar.png',
                 myTrips: [req.params.idTrip]
-            });   
-    //save the new user in the data base + update member with users member
-            newUser.save()
-                .then(userdata => {
-                    res.json({ result: true, newUser: userdata });
-                    return Trip.updateOne(
-                        { _id : req.params.idTrip },
-                        { $push: { members: newUser.id } }
-                    )
-                })
-                .then(() => {
-                    return Trip.findOne({ _id : req.params.idTrip })
-                        .populate('members');
-                })
-                .then(updatedTrip => {
-                    const htmlContent = `<p>Bienvenue sur notre plateforme ! Voici le lien pour rejoindre le voyage : http://localhost:3000/confirmation/${newUser.token}`;
-                    sendEmail(req.body.email, htmlContent)
-                    console.log(updatedTrip);
+            });
 
-                })
-                
-                .catch(err => {
-                    console.error(err);
-                    res.json({ result: false, error: 'An error occurred' });
-                });
-                
-                
+            await newUser.save();
+            await Trip.updateOne(
+                { _id: req.params.idTrip },
+                { $push: { members: newUser.id } }
+            );
+
+            const htmlContent = `<p>Bienvenue sur notre plateforme ! Voici le lien pour rejoindre le voyage : http://localhost:3000/confirmation/${newUser.token}`;
+            sendEmail(req.body.email, htmlContent);
+            res.json({ result: true, newUser });
         } else {
-    // User already exists in database & doesn't already exist inTrip
-            if(!data.myTrips.some((e) => e.id === req.params.idTrip)) {
-                console.log(data.token)
-                const htmlContent = `<p>Bienvenue sur notre plateforme ! Voici le lien pour rejoindre le voyage : http://localhost:3000/confirmation/${data.token}/${req.params.idTrip}/`;
-                sendEmail(req.body.email, htmlContent)  
-                res.json({ result: true, Msg: 'User already exists, mail was send' });
-            } else {
-                res.json({ result: false, Msg: 'User already exists & it\s already includes in trips' }); 
+            // Vérifiez si le nouvel utilisateur a déjà ce voyage dans ses voyages
+            if (user.myTrips.some((e) => e.id === req.params.idTrip)) {
+                res.json({ result: false, Msg: 'User already exists & it\s already included in trips' });
+                return;
             }
-        }
-      });
-})
 
-// ROUTE CONFIRMATION ALDREADY IN DDB
+            // Vérifiez les conflits de dates avec les voyages existants de l'utilisateur
+            for (let existingTrip of user.myTrips) {
+                const existingTripDepartureDate = new Date(existingTrip.dates.departure);
+                const existingTripReturnDate = new Date(existingTrip.dates.return);
+
+                if (
+                    (newTripDepartureDate >= existingTripDepartureDate && newTripDepartureDate <= existingTripReturnDate) ||
+                    (newTripReturnDate >= existingTripDepartureDate && newTripReturnDate <= existingTripReturnDate) ||
+                    (existingTripDepartureDate >= newTripDepartureDate && existingTripDepartureDate <= newTripReturnDate) ||
+                    (existingTripReturnDate >= newTripDepartureDate && existingTripReturnDate <= newTripReturnDate)
+                ) {
+                    res.json({ result: false, error: 'Les dates du voyage sont en conflit avec un des voyages de votre invité.' });
+                    return;
+                }
+            }
+
+            // Si aucune conflit de date n'est trouvé, ajoutez l'utilisateur au voyage et envoyez un email
+            await Trip.updateOne({ _id: req.params.idTrip }, { $push: { members: user.id } });
+            const htmlContent = `<p>Bienvenue sur notre plateforme ! Voici le lien pour rejoindre le voyage : http://localhost:3000/confirmation/${user.token}/${req.params.idTrip}/`;
+            sendEmail(req.body.email, htmlContent);
+            res.json({ result: true, Msg: 'User added to the trip and email sent' });
+        }
+    } catch (error) {
+        console.error(error);
+        res.json({ result: false, error: 'An error occurred' });
+    }
+});
 
 router.put('/adduser/:idTrip', async (req, res) => {
         // Recherche de l'utilisateur par le token
