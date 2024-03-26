@@ -12,7 +12,7 @@ router.get('/', function(req, res, next) {
 });
 
 router.post('/upload', async(req, res) => {
-  const photoPath = `./tmp${uniqid()}.jpg`;
+  const photoPath = `/tmp${uniqid()}.jpg`;
   const resultMove = await req.files.image.mv(photoPath);
 //resultMove undefined mean that it worked correctly
   if (!resultMove) {
