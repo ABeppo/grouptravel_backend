@@ -21,7 +21,7 @@
     "uid2": "^1.0.0",
     "uniqid": "^5.4.0"
   },
-  "resolution":{
+  "resolutions":{
     "string-width": "4.2.3"
   }
 }
