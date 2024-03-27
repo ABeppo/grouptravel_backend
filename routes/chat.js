@@ -3,7 +3,6 @@ var router = express.Router();
 require('../models/connexion');
 const Trip = require('../models/trips')
 const User = require('../models/users');
-const { checkBody } = require('../modules/checkBody');
 
 router.post('/recuperation', (req, res) => { 
     Trip.findOne({ _id: req.body.idTrip })
