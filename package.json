@@ -21,7 +21,7 @@
     "uid2": "^1.0.0",
     "uniqid": "^5.4.0"
   },
-  "devDependencies": {
-    "yarn-audit-fix": "^10.0.7"
+  "resolution":{
+    "string-width": "4.2.3"
   }
 }
