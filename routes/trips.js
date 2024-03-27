@@ -245,7 +245,7 @@ router.put('/addnewuser/:idTrip', async (req, res) => {
                 { $push: { members: newUser.id } }
             );
 
-            const htmlContent = `<p>Bienvenue sur notre plateforme ! Voici le lien pour rejoindre le voyage : http://localhost:3000/confirmation/${newUser.token}`;
+            const htmlContent = `<p>Bienvenue sur notre plateforme ! Voici le lien pour rejoindre le voyage : https://grouptravel-one.vercel.app/confirmation/${newUser.token}`;
             sendEmail(req.body.email, htmlContent);
             res.json({ result: true, newUser });
         } else {
@@ -273,7 +273,7 @@ router.put('/addnewuser/:idTrip', async (req, res) => {
 
             // Si aucune conflit de date n'est trouvé, ajoutez l'utilisateur au voyage et envoyez un email
             await Trip.updateOne({ _id: req.params.idTrip }, { $push: { members: user.id } });
-            const htmlContent = `<p>Bienvenue sur notre plateforme ! Voici le lien pour rejoindre le voyage : http://localhost:3000/confirmation/${user.token}/${req.params.idTrip}/`;
+            const htmlContent = `<p>Bienvenue sur notre plateforme ! Voici le lien pour rejoindre le voyage : https://grouptravel-one.vercel.app/confirmation/${user.token}/${req.params.idTrip}/`;
             sendEmail(req.body.email, htmlContent);
             res.json({ result: true, Msg: 'User added to the trip and email sent' });
         }
